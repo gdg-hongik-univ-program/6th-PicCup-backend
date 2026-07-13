@@ -1,0 +1,7 @@
+build/
+.gradle/
+.idea/
+*.iml
+.env
+.git/
+HELP.md
