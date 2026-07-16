@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users") // 예약어 중복 방지
 @Getter
@@ -16,6 +18,23 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TODO: 6주차 로그인 구현 시 email, password, role 등의 컬럼을 여기에 추가
-    private String dummyName;
+    @Column(unique = true)
+    private String email;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(length = 10)
+    private String nickname;
+
+    @Column(name = "profile_image_s3_key", length = 512)
+    private String profileImageS3Key;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
