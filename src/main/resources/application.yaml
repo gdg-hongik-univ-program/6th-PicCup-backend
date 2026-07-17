@@ -4,6 +4,7 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -12,8 +13,21 @@ spring:
       hibernate:
         format_sql: true
 
+  # MySQL 기반 세션 저장소 설정
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: always # 세션 테이블 자동 생성
+      # SPRING_SESSION: 세션의 핵심 정보(만료 시간 등)가 저장되는 곳
+      # SPRING_SESSION_ATTRIBUTES: 코드에서 setAttribute("LOGIN_USER_ID", ...)로 넣은 실제 데이터가 저장되는 곳
+    timeout: 7d # 서버 측 세션 객체 유지 기간
+
 server:
   port: ${PORT:8080}
+  servlet:
+    session:
+      cookie:
+        max-age: 7d # 클라이언트(브라우저) 쿠키 유지 기간
 
 cloud:
   aws:

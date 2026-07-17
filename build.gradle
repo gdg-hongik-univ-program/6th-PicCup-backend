@@ -32,6 +32,8 @@ dependencies {
     // AWS S3 SDK v2 — BOM으로 버전 통합 관리
     implementation platform('software.amazon.awssdk:bom:2.47.6')
     implementation 'software.amazon.awssdk:s3'
+
+	implementation 'org.springframework.security:spring-security-crypto' // 비밀번호 암호화 기능 라이브러리
 }
 
 tasks.named('test') {
