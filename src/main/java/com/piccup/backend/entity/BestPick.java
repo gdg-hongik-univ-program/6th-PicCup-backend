@@ -1,9 +1,7 @@
 package com.piccup.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,7 +10,9 @@ import java.time.LocalDateTime;
 @Table(name = "best_pick")
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class BestPick {
 
     @Id
@@ -29,10 +29,16 @@ public class BestPick {
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
-    @Column(name = "image_url")
-    private String imageUrl; // S3 또는 임시 로컬 경로
+    @Column(name = "s3_key", nullable = false)
+    private String s3Key;
 
-    @Column(name = "captured_date")
+    @Column(name = "candidate_count", nullable = false)
+    private Integer candidateCount;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;   // 소프트삭제. null이면 살아있음
+
+    @Column(name = "captured_date", nullable = false)
     private LocalDate capturedDate; // 캘린더에 꽂을 기준 날짜
 
     @Column(name = "created_at", updatable = false)
