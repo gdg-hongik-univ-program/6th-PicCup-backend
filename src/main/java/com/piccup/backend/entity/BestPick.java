@@ -9,10 +9,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "best_pick")
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)  // 빌더용 모든 필드 생성자 닫음
+@Builder(access = AccessLevel.PRIVATE)             // 빌더 접근 제어자 닫음
 public class BestPick {
 
     @Id
@@ -36,7 +35,7 @@ public class BestPick {
     private Integer candidateCount;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;   // 소프트삭제. null이면 살아있음
+    private LocalDateTime deletedAt; // 소프트삭제. null이면 살아있음
 
     @Column(name = "captured_date", nullable = false)
     private LocalDate capturedDate; // 캘린더에 꽂을 기준 날짜
@@ -44,9 +43,19 @@ public class BestPick {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt; // 시간까지 반영
 
-    // DB에 데이터가 처음 INSERT 되기 직전에 현재 시간을 자동으로 세팅
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    // 정적 팩토리 메서드 (빌더 패턴)
+    public static BestPick createBestPick(User user, Category category, String s3Key, LocalDate capturedDate, Integer candidateCount) {
+        return BestPick.builder()
+                .user(user)
+                .category(category)
+                .s3Key(s3Key)
+                .capturedDate(capturedDate)
+                .candidateCount(candidateCount)
+                .build();
     }
 }

@@ -1,9 +1,9 @@
 package com.piccup.backend.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
                 columnNames = {"user_id", "name"}
         )
 )
-@Getter @Setter @NoArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Category {
 
     @Id
@@ -36,5 +37,13 @@ public class Category {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    // 정적 팩토리 메서드
+    public static Category createCategory(User user, String name) {
+        Category category = new Category();
+        category.user = user;
+        category.name = name;
+        return category;
     }
 }
