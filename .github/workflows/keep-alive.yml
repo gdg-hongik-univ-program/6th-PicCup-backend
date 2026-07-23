@@ -12,4 +12,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Health API
-        run: curl -s https://piccup-api.onrender.com/health
+        run: curl -s https://piccup-api.onrender.com/api/health
