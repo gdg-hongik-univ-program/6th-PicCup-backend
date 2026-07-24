@@ -2,9 +2,7 @@ name: Keep Render Backend Alive
 
 on:
   schedule:
-    # 5분 간격, 혼잡 구간 피함
     - cron: '2,7,12,17,22,27,32,37,42,47,52,57 0-16 * * *'
-  # 테스트용 수동 실행
   workflow_dispatch:
 
 jobs:
@@ -13,8 +11,4 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Ping Health API
-        run: |
-          curl -sS -f \
-               --max-time 90 \
-               --retry 3 --retry-delay 15 --retry-all-errors \
-               -w '\nHTTP %{http_code} / %{time_total}s\n' \
+        run: curl -sS -f --max-time 90 --retry 3 --retry-delay 15 --retry-all-errors -w '\nHTTP %{http_code} / %{time_total}s\n'
