@@ -13,7 +13,7 @@ public class HealthController {
     // DB에 쿼리를 날리기 위함
     private final JdbcTemplate jdbcTemplate;
 
-    @GetMapping("/api/health")
+    @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
         // 더미 쿼리를 실행
         jdbcTemplate.queryForObject("SELECT 1", Integer.class);
