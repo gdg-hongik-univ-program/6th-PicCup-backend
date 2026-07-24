@@ -11,4 +11,4 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Ping Health API
-        run: curl -sS -f --max-time 90 --retry 3 --retry-delay 15 --retry-all-errors -w '\nHTTP %{http_code} / %{time_total}s\n'
+        run: curl -sS -f --max-time 90 --retry 3 --retry-delay 15 --retry-all-errors -w '\nHTTP %{http_code} / %{time_total}s\n' https://piccup-api.onrender.com/health
