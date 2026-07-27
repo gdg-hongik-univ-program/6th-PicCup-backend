@@ -46,4 +46,9 @@ public class User {
         user.profileImageS3Key = profileImageS3Key;
         return user;
     }
+
+    // 비밀번호 재설정용 메서드
+    public void updatePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
 }
