@@ -29,12 +29,12 @@ public class UserService {
     }
 
     public User login(UserRequest.Login request) {
+        // 이메일 존재 여부와 비밀번호 불일치 메시지 통일
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
-        // 입력받은 평문(request.getPassword())과 DB의 해시(user.getPasswordHash()) 일치 여부 검증
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
         return user;
     }
@@ -44,7 +44,8 @@ public class UserService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
 
-        // 새 비밀번호도 암호화해서 저장
+        // 비밀번호 업데이트
         String hashedNewPassword = passwordEncoder.encode(request.getNewPassword());
+        user.updatePassword(hashedNewPassword);
     }
 }

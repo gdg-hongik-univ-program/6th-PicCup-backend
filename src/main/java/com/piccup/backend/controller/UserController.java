@@ -30,7 +30,13 @@ public class UserController {
     public ResponseEntity<UserResponse.Login> login(@RequestBody UserRequest.Login request, HttpServletRequest httpRequest) {
         User loginUser = userService.login(request);
 
-        // 로그인 성공 시 세션 발급 (DB에 저장)
+        // 기존 세션 있으면 무효화
+        HttpSession oldSession = httpRequest.getSession(false);
+        if (oldSession != null) {
+            oldSession.invalidate();
+        }
+
+        // 로그인 성공 시 새로운 세션 발급 (DB에 저장)
         HttpSession session = httpRequest.getSession(true);
         session.setAttribute(LOGIN_USER, loginUser.getId());
 
