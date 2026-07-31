@@ -7,14 +7,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "category",
-        // 같은 유저(user_id)는 똑같은 이름(name)의 카테고리를 중복해서 만들 수 없다.
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_category_user_name",
-                columnNames = {"user_id", "name"}
-        )
-)
+@Table(name = "category")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Category {
