@@ -32,10 +32,10 @@ public class CategoryController {
                 .body(categoryService.createCategory(userId, request));
     }
 
-    @PutMapping("/{categoryId}")
+    @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse.Update> updateCategory(
             @RequestHeader("X-User-Id") Long userId,
-            @PathVariable Long categoryId,
+            @PathVariable("id") Long categoryId,
             @Valid @RequestBody CategoryRequest.Update request) {
         return ResponseEntity.ok(categoryService.updateCategory(userId, categoryId, request));
     }
