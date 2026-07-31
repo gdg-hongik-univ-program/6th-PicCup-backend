@@ -40,13 +40,16 @@ public class BestPickService {
 
         // 4. DB insert, 실패 시 3에서 S3에 업로드한 키 삭제
         try {
-            BestPick saved = bestPickRepository.save(BestPick.builder()
-                    .user(category.getUser())   // IDOR 통과 = 카테고리 주인 = 업로더. UserRepository 안 끌어와도 된다
-                    .category(category)
-                    .s3Key(key)
-                    .capturedDate(capturedDate)
-                    .candidateCount(candidateCount)
-                    .build());
+            // 정적 팩토리 메서드 사용
+            BestPick saved = bestPickRepository.save(
+                    BestPick.createBestPick(
+                            category.getUser(),
+                            category,
+                            key,
+                            capturedDate,
+                            candidateCount
+                    )
+            );
             return toResponse(saved);
         } catch (RuntimeException e) {
             s3Uploader.delete(key);  // 보상 삭제
