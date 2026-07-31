@@ -50,4 +50,18 @@ public class Category {
     public void updateName(String name) {
         this.name = name;
     }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    // 카테고리 되돌리기. 주의: 서비스 계층에서 restore() 호출 전에
+    // getDeletedAt() 값을 먼저 변수로 빼둘 것 - best_pick 배치 매칭에 필요
+    public void restore() {
+        this.deletedAt = null;
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
 }
