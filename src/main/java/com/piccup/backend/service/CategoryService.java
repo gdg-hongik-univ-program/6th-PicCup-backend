@@ -121,9 +121,9 @@ public class CategoryService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CATEGORY_PROTECTED");
         }
 
-        // 1. 카테고리 자체 소프트삭제 (이 타임스탬프가 배치 식별자가 됨)
-        category.softDelete();
-        LocalDateTime batchTime = category.getDeletedAt();
+        // 초 단위로 통일한 배치 시각 (정밀도 불일치 방지)
+        LocalDateTime batchTime = LocalDateTime.now().withNano(0);
+        category.softDelete(batchTime);                 // 카테고리도 이 값
 
         // 2. 하위 살아있는 픽 전부 트래시로
         List<BestPick> picks = bestPickRepository.findByCategoryIdAndDeletedAtIsNull(categoryId);
