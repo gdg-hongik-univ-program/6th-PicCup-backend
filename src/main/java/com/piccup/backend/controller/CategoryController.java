@@ -39,4 +39,18 @@ public class CategoryController {
             @Valid @RequestBody CategoryRequest.Update request) {
         return ResponseEntity.ok(categoryService.updateCategory(userId, categoryId, request));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<CategoryResponse.Delete> deleteCategory(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable("id") Long categoryId) {
+        return ResponseEntity.ok(categoryService.deleteCategory(userId, categoryId));
+    }
+
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<CategoryResponse.Restore> restoreCategory(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable("id") Long categoryId) {
+        return ResponseEntity.ok(categoryService.restoreCategory(userId, categoryId));
+    }
 }

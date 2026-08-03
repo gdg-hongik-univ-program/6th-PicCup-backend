@@ -20,4 +20,10 @@ public class CategoryResponse {
             Long id,
             String name
     ) {}
+
+    // 카테고리 삭제 시 사용
+    public record Delete(Long id, int deletedBestPickCount) {}
+
+    // 카테고리 삭제 후 되돌리기 시 사용
+    public record Restore(Long id, int restoredBestPickCount) {}
 }
