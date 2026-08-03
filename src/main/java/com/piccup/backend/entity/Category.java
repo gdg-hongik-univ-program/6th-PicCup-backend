@@ -51,8 +51,8 @@ public class Category {
         this.name = name;
     }
 
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
+    public void softDelete(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
     // 카테고리 되돌리기. 주의: 서비스 계층에서 restore() 호출 전에

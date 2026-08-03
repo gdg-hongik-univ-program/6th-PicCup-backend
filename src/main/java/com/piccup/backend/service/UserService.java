@@ -1,7 +1,9 @@
 package com.piccup.backend.service;
 
 import com.piccup.backend.dto.UserRequest;
+import com.piccup.backend.entity.Category;
 import com.piccup.backend.entity.User;
+import com.piccup.backend.repository.CategoryRepository;
 import com.piccup.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final CategoryRepository categoryRepository;
 
     @Transactional
     public User signup(UserRequest.Signup request) {
@@ -25,7 +28,13 @@ public class UserService {
 
         // 정적 팩토리 메서드 활용
         User user = User.createUser(request.getEmail(), hashedPassword, request.getNickname(), null);
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // 미분류 카테고리 자동 시드 (isDefault=true) — 폴백 안전망
+        Category uncategorized = Category.createCategory(savedUser, "미분류", true);
+        categoryRepository.save(uncategorized);
+
+        return savedUser;
     }
 
     public User login(UserRequest.Login request) {

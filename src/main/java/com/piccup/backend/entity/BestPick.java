@@ -58,4 +58,22 @@ public class BestPick {
                 .candidateCount(candidateCount)
                 .build();
     }
+
+    // 소프트삭제: s3_key를 trash 경로로 갱신 + deletedAt 기록
+    // deletedAt은 서비스에서 배치 매칭용으로 통일된 값을 주입받음
+    public void moveToTrash(String trashKey, LocalDateTime deletedAt) {
+        this.s3Key = trashKey;
+        this.deletedAt = deletedAt;
+    }
+
+    // 복구: s3_key를 원래 경로로 되돌림 + deletedAt 초기화
+    public void restore(String originalKey) {
+        this.s3Key = originalKey;
+        this.deletedAt = null;
+    }
+
+    // 카테고리 재배정 (미분류 폴백 / 카테고리 이동용)
+    public void changeCategory(Category category) {
+        this.category = category;
+    }
 }

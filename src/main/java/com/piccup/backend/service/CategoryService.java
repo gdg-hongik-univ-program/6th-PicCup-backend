@@ -2,8 +2,10 @@ package com.piccup.backend.service;
 
 import com.piccup.backend.dto.CategoryRequest;
 import com.piccup.backend.dto.CategoryResponse;
+import com.piccup.backend.entity.BestPick;
 import com.piccup.backend.entity.Category;
 import com.piccup.backend.entity.User;
+import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository.CategoryListProjection;
 import com.piccup.backend.repository.CategoryRepository;
 import com.piccup.backend.repository.UserRepository;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +26,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final BestPickRepository bestPickRepository;
     private final S3Uploader s3Uploader;
 
     // 카테고리 목록 조회
@@ -102,5 +106,61 @@ public class CategoryService {
         category.updateName(request.name());
         // 수정된 ID와 이름을 DTO에 담아 컨트롤러에 반환
         return new CategoryResponse.Update(category.getId(), category.getName());
+    }
+
+    // 카테고리 삭제 (소프트삭제 + 하위 best_pick cascade)
+    @Transactional
+    public CategoryResponse.Delete deleteCategory(Long userId, Long categoryId) {
+        Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+
+        if (!category.getUser().getId().equals(userId)) {  // 특정 User가 다른 user의 카테고리 삭제 불가능
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+        }
+        if (category.isDefault()) {  // 미분류 카테고리는 삭제 불가능
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CATEGORY_PROTECTED");
+        }
+
+        // 초 단위로 통일한 배치 시각 (정밀도 불일치 방지)
+        LocalDateTime batchTime = LocalDateTime.now().withNano(0);
+        category.softDelete(batchTime);                 // 카테고리도 이 값
+
+        // 2. 하위 살아있는 픽 전부 트래시로
+        List<BestPick> picks = bestPickRepository.findByCategoryIdAndDeletedAtIsNull(categoryId);
+        for (BestPick pick : picks) {
+            String trashKey = s3Uploader.moveToTrash(pick.getS3Key());  // S3 이동
+            pick.moveToTrash(trashKey, batchTime);                      // DB 갱신 (같은 batchTime)
+        }
+
+        return new CategoryResponse.Delete(category.getId(), picks.size());
+    }
+
+    // 카테고리 되돌리기 (카테고리 부활 + 해당 배치 픽만 원위치)
+    @Transactional
+    public CategoryResponse.Restore restoreCategory(Long userId, Long categoryId) {
+        // 삭제된 것도 찾아야 하니 deletedAtIsNull 필터 없는 조회
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+
+        if (!category.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+        }
+
+        // restore() 부르기 전에 batchTime 먼저 확보 (부르고 나면 null 됨)
+        LocalDateTime batchTime = category.getDeletedAt();
+        if (batchTime == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CATEGORY_NOT_DELETED");
+        }
+
+        category.restore();
+
+        // 이 배치에 딸려간 픽만 복구 (그 사이 개별 삭제된 픽은 타임스탬프 달라서 제외)
+        List<BestPick> picks = bestPickRepository.findByCategoryIdAndDeletedAt(categoryId, batchTime);
+        for (BestPick pick : picks) {
+            String originalKey = s3Uploader.restoreFromTrash(pick.getS3Key());
+            pick.restore(originalKey);
+        }
+
+        return new CategoryResponse.Restore(category.getId(), picks.size());
     }
 }
