@@ -17,7 +17,10 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/users/login",
                         "/api/users/password/reset",
                         "/health",          // 서버 헬스체크용
-                        "/swagger-ui/**"   // API 문서
+                        "/swagger-ui/**"    // API 문서
+                        "/v3/api-docs/**"
+                        "/ping"             // 자기 핑용
+
                 );
     }
 
