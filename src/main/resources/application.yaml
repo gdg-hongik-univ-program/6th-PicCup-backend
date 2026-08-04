@@ -25,6 +25,8 @@ server:
     session:
       cookie:
         max-age: 7d # 프론트엔드 쿠키 7일 유지
+        same-site: lax
+        secure: true      # HTTPS 환경에서만 동작
 
 cloud:
   aws:
