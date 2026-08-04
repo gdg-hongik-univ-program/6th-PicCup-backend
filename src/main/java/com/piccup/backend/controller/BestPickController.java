@@ -20,7 +20,7 @@ public class BestPickController {
 
     @PostMapping
     public ResponseEntity<BestPickResponse> upload(
-            @RequestHeader("X-User-Id") Long userId,
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam("capturedDate")

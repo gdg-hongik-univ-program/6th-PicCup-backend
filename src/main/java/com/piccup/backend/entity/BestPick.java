@@ -23,9 +23,8 @@ public class BestPick {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    // 유저는 6주차 전까지 임시로 비워둘 수 있도록 nullable = true 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = true)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "s3_key", nullable = false)

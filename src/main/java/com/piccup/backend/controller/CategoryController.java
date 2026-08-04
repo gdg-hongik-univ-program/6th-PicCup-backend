@@ -22,14 +22,14 @@ public class CategoryController {
     @Operation(summary = "카테고리 목록 조회", description = "미삭제 카테고리만, 커버/장수/최근날짜 포함")
     @GetMapping
     public ResponseEntity<List<CategoryResponse.Get>> getCategories(
-            @RequestHeader("X-User-Id") Long userId) {
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId) {
         return ResponseEntity.ok(categoryService.getCategories(userId));
     }
 
     @Operation(summary = "카테고리 생성", description = "이름 중복 시 409 CATEGORY_DUPLICATE")
     @PostMapping
     public ResponseEntity<CategoryResponse.Get> createCategory(
-            @RequestHeader("X-User-Id") Long userId,
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @Valid @RequestBody CategoryRequest.Create request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(categoryService.createCategory(userId, request));
@@ -38,7 +38,7 @@ public class CategoryController {
     @Operation(summary = "카테고리 이름 수정", description = "미분류는 403 CATEGORY_PROTECTED")
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse.Update> updateCategory(
-            @RequestHeader("X-User-Id") Long userId,
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @PathVariable("id") Long categoryId,
             @Valid @RequestBody CategoryRequest.Update request) {
         return ResponseEntity.ok(categoryService.updateCategory(userId, categoryId, request));
@@ -47,7 +47,7 @@ public class CategoryController {
     @Operation(summary = "카테고리 삭제", description = "소프트삭제 + 하위 best_pick cascade 트래시 이동. 미분류는 403")
     @DeleteMapping("/{id}")
     public ResponseEntity<CategoryResponse.Delete> deleteCategory(
-            @RequestHeader("X-User-Id") Long userId,
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @PathVariable("id") Long categoryId) {
         return ResponseEntity.ok(categoryService.deleteCategory(userId, categoryId));
     }
@@ -55,7 +55,7 @@ public class CategoryController {
     @Operation(summary = "카테고리 되돌리기", description = "삭제 배치에 딸린 best_pick만 원위치 복구")
     @PostMapping("/{id}/restore")
     public ResponseEntity<CategoryResponse.Restore> restoreCategory(
-            @RequestHeader("X-User-Id") Long userId,
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @PathVariable("id") Long categoryId) {
         return ResponseEntity.ok(categoryService.restoreCategory(userId, categoryId));
     }
