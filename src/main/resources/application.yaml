@@ -25,7 +25,7 @@ server:
     session:
       cookie:
         max-age: 7d # 프론트엔드 쿠키 7일 유지
-        same-site: none   # 다른 도메인 간 전송 허용 (백/프론트 연결 시 오류 방지)
+        same-site: lax
         secure: true      # HTTPS 환경에서만 동작
 
 cloud:

@@ -26,7 +26,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             // 401 에러 응답 반환
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"error\": \"UNAUTHENTICATED\", \"message\": \"세션 없음/만료\"}");
+            response.getWriter().write("{\"code\": \"UNAUTHENTICATED\", \"message\": \"세션 없음/만료\"}");
 
             return false; // 컨트롤러로 요청을 넘기지 않고 여기서 차단
         }

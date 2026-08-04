@@ -23,13 +23,4 @@ public class WebConfig implements WebMvcConfigurer {
 
                 );
     }
-
-    @Override
-    public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:3000", "https://6th-piccup-frontend.vercel.app") // 프론트측 주소
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true); // 세션 쿠키를 주고받을 수 있게 허용
-    }
 }
