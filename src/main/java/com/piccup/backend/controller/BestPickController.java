@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/best-picks")
@@ -19,17 +20,34 @@ public class BestPickController {
     private final BestPickService bestPickService;
 
     @PostMapping
-    public ResponseEntity<BestPickResponse> upload(
+    public ResponseEntity<BestPickResponse.Upload> upload(
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam("capturedDate")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate capturedDate,
-            @RequestParam("candidateCount")
-            int candidateCount) {
+            @RequestParam("candidateCount") int candidateCount) {
 
-        BestPickResponse res =
+        BestPickResponse.Upload res =
                 bestPickService.upload(userId, file, categoryId, capturedDate, candidateCount);
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
+    }
+
+    @GetMapping("/calendar")
+    public ResponseEntity<List<BestPickResponse.Calendar>> getCalendar(
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
+            @RequestParam("yearMonth") String yearMonth) {
+
+        List<BestPickResponse.Calendar> res = bestPickService.getCalendar(userId, yearMonth);
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<BestPickResponse.Detail> getBestPickDetail(
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
+            @PathVariable("id") Long id) {
+
+        BestPickResponse.Detail res = bestPickService.getBestPickDetail(userId, id);
+        return ResponseEntity.ok(res);
     }
 }

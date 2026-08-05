@@ -6,41 +6,44 @@ import com.piccup.backend.entity.Category;
 import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BestPickService {
 
     private final BestPickRepository bestPickRepository;
     private final CategoryRepository categoryRepository;
     private final S3Uploader s3Uploader;
 
-    public BestPickResponse upload(Long userId, MultipartFile file,
-                                   Long categoryId, LocalDate capturedDate, int candidateCount) {
+    @Transactional
+    public BestPickResponse.Upload upload(Long userId, MultipartFile file,
+                                          Long categoryId, LocalDate capturedDate, int candidateCount) {
 
-        // 1. 파일 검증 (S3 올리기 전에)
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("INVALID_IMAGE"); // TODO: 커스텀 예외
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_IMAGE");
         }
 
-        // 2. 카테고리 소유권 검증 (IDOR) — S3 업로드 '전에'
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("CATEGORY_NOT_FOUND"));
-        // getUser().getId() 는 LAZY 프록시여도 FK만 읽어서 추가 쿼리 안 나간다
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+
         if (!userId.equals(category.getUser().getId())) {
-            throw new IllegalArgumentException("FORBIDDEN_RESOURCE");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
         }
 
-        // 3. S3 업로드 (key 생성 포함, key 리턴)
         String key = s3Uploader.upload(file, userId);
 
-        // 4. DB insert, 실패 시 3에서 S3에 업로드한 키 삭제
         try {
-            // 정적 팩토리 메서드 사용
             BestPick saved = bestPickRepository.save(
                     BestPick.createBestPick(
                             category.getUser(),
@@ -50,17 +53,52 @@ public class BestPickService {
                             candidateCount
                     )
             );
-            return toResponse(saved);
+            return new BestPickResponse.Upload(
+                    saved.getId(),
+                    saved.getCategory().getId(),
+                    saved.getCapturedDate(),
+                    saved.getCandidateCount(),
+                    saved.getCreatedAt(),
+                    s3Uploader.generatePresignedUrl(saved.getS3Key())
+            );
         } catch (RuntimeException e) {
-            s3Uploader.delete(key);  // 보상 삭제
+            s3Uploader.delete(key);
             throw e;
         }
     }
 
-    private BestPickResponse toResponse(BestPick bp) {
-        return new BestPickResponse(
+    // 캘린더 데이터 조회
+    public List<BestPickResponse.Calendar> getCalendar(Long userId, String yearMonth) {
+        YearMonth ym = YearMonth.parse(yearMonth);
+        LocalDate startDate = ym.atDay(1);
+        LocalDate endDate = ym.plusMonths(1).atDay(1);
+
+        List<BestPick> picks = bestPickRepository.findCalendarPicks(userId, startDate, endDate);
+
+        return picks.stream().map(bp -> new BestPickResponse.Calendar(
                 bp.getId(),
                 bp.getCategory().getId(),
+                bp.getCategory().getName(),
+                bp.getCapturedDate(),
+                bp.getCreatedAt(),
+                s3Uploader.generatePresignedUrl(bp.getS3Key())
+        )).collect(Collectors.toList());
+    }
+
+    // 사진 단건 상세 조회
+    public BestPickResponse.Detail getBestPickDetail(Long userId, Long bestPickId) {
+        BestPick bp = bestPickRepository.findByIdWithCategory(bestPickId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND"));
+
+        // 보안
+        if (!bp.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+        }
+
+        return new BestPickResponse.Detail(
+                bp.getId(),
+                bp.getCategory().getId(),
+                bp.getCategory().getName(),
                 bp.getCapturedDate(),
                 bp.getCandidateCount(),
                 bp.getCreatedAt(),
