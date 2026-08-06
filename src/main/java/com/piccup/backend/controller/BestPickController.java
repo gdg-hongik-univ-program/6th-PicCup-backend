@@ -1,5 +1,6 @@
 package com.piccup.backend.controller;
 
+import com.piccup.backend.dto.BestPickRequest;
 import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.service.BestPickService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,34 @@ public class BestPickController {
             @PathVariable("id") Long id) {
 
         BestPickResponse.Detail res = bestPickService.getBestPickDetail(userId, id);
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<BestPickResponse.Album>> getBestPicks(
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
+            @RequestParam(value = "categoryId", required = false) Long categoryId) {
+
+        List<BestPickResponse.Album> res = bestPickService.getBestPicks(userId, categoryId);
+        return ResponseEntity.ok(res);
+    }
+
+    @PatchMapping("/move")
+    public ResponseEntity<BestPickResponse.MoveResult> moveCategories(
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
+            @RequestBody BestPickRequest.MoveCategory request) {
+
+        BestPickResponse.MoveResult res = bestPickService.moveCategories(userId, request);
+        return ResponseEntity.ok(res);
+    }
+
+    @PatchMapping("/{id}/like")
+    public ResponseEntity<BestPickResponse.LikeResult> updateLike(
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
+            @PathVariable("id") Long id,
+            @RequestBody BestPickRequest.UpdateLike request) {
+
+        BestPickResponse.LikeResult res = bestPickService.updateLike(userId, id, request);
         return ResponseEntity.ok(res);
     }
 }

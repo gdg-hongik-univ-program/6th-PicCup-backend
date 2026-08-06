@@ -1,5 +1,6 @@
 package com.piccup.backend.service;
 
+import com.piccup.backend.dto.BestPickRequest;
 import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.entity.BestPick;
 import com.piccup.backend.entity.Category;
@@ -102,7 +103,76 @@ public class BestPickService {
                 bp.getCapturedDate(),
                 bp.getCandidateCount(),
                 bp.getCreatedAt(),
-                s3Uploader.generatePresignedUrl(bp.getS3Key())
+                s3Uploader.generatePresignedUrl(bp.getS3Key()),
+                bp.isLiked()
+        );
+    }
+
+    // 카테고리별 사진 조회 (앨범)
+    public List<BestPickResponse.Album> getBestPicks(Long userId, Long categoryId) {
+        List<BestPick> picks;
+
+        if (categoryId == null) {
+            picks = bestPickRepository.findAllByUserId(userId);
+        } else {
+            picks = bestPickRepository.findAllByUserIdAndCategoryId(userId, categoryId);
+        }
+
+        return picks.stream().map(bp -> new BestPickResponse.Album(
+                bp.getId(),
+                bp.getCategory().getId(),
+                bp.getCategory().getName(),
+                bp.getCapturedDate(),
+                bp.getCreatedAt(),
+                s3Uploader.generatePresignedUrl(bp.getS3Key()),
+                bp.isLiked()
+        )).collect(Collectors.toList());
+    }
+
+    // 카테고리 다중 이동
+    @Transactional
+    public BestPickResponse.MoveResult moveCategories(Long userId, BestPickRequest.MoveCategory request) {
+        Category targetCategory = categoryRepository.findById(request.targetCategoryId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+
+        if (!targetCategory.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+        }
+
+        List<BestPick> picksToMove = bestPickRepository.findByIdInAndUserIdAndDeletedAtIsNull(request.ids(), userId);
+
+        for (BestPick pick : picksToMove) {
+            pick.changeCategory(targetCategory);
+        }
+
+        List<Long> movedIds = picksToMove.stream()
+                .map(BestPick::getId)
+                .toList();
+
+        return new BestPickResponse.MoveResult(
+                movedIds,
+                targetCategory.getId(),
+                targetCategory.getName()
+        );
+    }
+
+    // 베스트픽 좋아요 상태 변경
+    @Transactional
+    public BestPickResponse.LikeResult updateLike(Long userId, Long pickId, BestPickRequest.UpdateLike request) {
+        BestPick pick = bestPickRepository.findByIdWithCategory(pickId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND"));
+
+        if (!pick.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+        }
+
+        pick.changeLike(request.isLiked());
+
+        return new BestPickResponse.LikeResult(
+                pick.getId(),
+                pick.getCategory().getId(),
+                pick.getCategory().getName(),
+                pick.isLiked()
         );
     }
 }

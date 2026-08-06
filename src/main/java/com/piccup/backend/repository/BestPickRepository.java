@@ -31,4 +31,19 @@ public interface BestPickRepository extends JpaRepository<BestPick, Long> {
     @Query("SELECT bp FROM BestPick bp JOIN FETCH bp.category c " +
             "WHERE bp.id = :id AND bp.deletedAt IS NULL")
     Optional<BestPick> findByIdWithCategory(@Param("id") Long id);
+
+    // 조건 없이 전체 조회 (categoryId 쿼리스트링이 없을 때)
+    @Query("SELECT bp FROM BestPick bp JOIN FETCH bp.category c " +
+            "WHERE bp.user.id = :userId AND bp.deletedAt IS NULL " +
+            "ORDER BY bp.createdAt DESC")
+    List<BestPick> findAllByUserId(@Param("userId") Long userId);
+
+    // 특정 카테고리 앨범 조회
+    @Query("SELECT bp FROM BestPick bp JOIN FETCH bp.category c " +
+            "WHERE bp.user.id = :userId AND bp.category.id = :categoryId AND bp.deletedAt IS NULL " +
+            "ORDER BY bp.createdAt DESC")
+    List<BestPick> findAllByUserIdAndCategoryId(@Param("userId") Long userId, @Param("categoryId") Long categoryId);
+
+    // 다중 이동용: 유저 소유의 특정 사진 여러 개 조회 (삭제되지 않은 것만)
+    List<BestPick> findByIdInAndUserIdAndDeletedAtIsNull(List<Long> ids, Long userId);
 }

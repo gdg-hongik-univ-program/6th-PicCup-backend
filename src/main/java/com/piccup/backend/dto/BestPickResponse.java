@@ -2,6 +2,7 @@ package com.piccup.backend.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class BestPickResponse {
 
@@ -33,6 +34,33 @@ public class BestPickResponse {
             LocalDate capturedDate,
             int candidateCount,
             LocalDateTime createdAt,
-            String imageUrl
+            String imageUrl,
+            boolean isLiked
+    ) {}
+
+    // 카테고리별 사진 조회(앨범)용 응답
+    public record Album(
+            Long id,
+            Long categoryId,
+            String categoryName,
+            LocalDate capturedDate,
+            LocalDateTime createdAt,
+            String imageUrl,
+            boolean isLiked
+    ) {}
+
+    // 카테고리 다중 이동 성공 시 응답
+    public record MoveResult(
+            List<Long> movedIds,
+            Long categoryId,
+            String categoryName
+    ) {}
+
+    // 좋아요 변경 성공 시 응답
+    public record LikeResult(
+            Long id,
+            Long categoryId,
+            String categoryName,
+            boolean isLiked
     ) {}
 }
