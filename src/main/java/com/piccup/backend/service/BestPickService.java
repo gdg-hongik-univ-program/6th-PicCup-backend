@@ -9,6 +9,7 @@ import com.piccup.backend.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +19,9 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,8 +30,9 @@ public class BestPickService {
     private final BestPickRepository bestPickRepository;
     private final CategoryRepository categoryRepository;
     private final S3Uploader s3Uploader;
+    private static final Logger log = LoggerFactory.getLogger(BestPickService.class);
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public BestPickResponse.Upload upload(Long userId, MultipartFile file,
                                           Long categoryId, LocalDate capturedDate, int candidateCount) {
 
@@ -35,7 +40,7 @@ public class BestPickService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_IMAGE");
         }
 
-        Category category = categoryRepository.findById(categoryId)
+        Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
 
         if (!userId.equals(category.getUser().getId())) {
@@ -63,14 +68,17 @@ public class BestPickService {
                     s3Uploader.generatePresignedUrl(saved.getS3Key())
             );
         } catch (RuntimeException e) {
-            s3Uploader.delete(key);
+            try {
+                s3Uploader.delete(key);
+            } catch (RuntimeException deleteEx) {
+                log.error("보상 삭제 실패. DB 미등록 S3 객체 남음: key={}", key, deleteEx);
+            }
             throw e;
         }
     }
 
     // 캘린더 데이터 조회
-    public List<BestPickResponse.Calendar> getCalendar(Long userId, String yearMonth) {
-        YearMonth ym = YearMonth.parse(yearMonth);
+    public List<BestPickResponse.Calendar> getCalendar(Long userId, YearMonth ym) {
         LocalDate startDate = ym.atDay(1);
         LocalDate endDate = ym.plusMonths(1).atDay(1);
 
@@ -132,7 +140,7 @@ public class BestPickService {
     // 카테고리 다중 이동
     @Transactional
     public BestPickResponse.MoveResult moveCategories(Long userId, BestPickRequest.MoveCategory request) {
-        Category targetCategory = categoryRepository.findById(request.targetCategoryId())
+        Category targetCategory = categoryRepository.findByIdAndDeletedAtIsNull(request.targetCategoryId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
 
         if (!targetCategory.getUser().getId().equals(userId)) {
