@@ -1,5 +1,7 @@
 package com.piccup.backend.dto;
 
+import jakarta.validation.constraints.NotEmpty;
+
 import java.util.List;
 
 public class BestPickRequest {
@@ -14,4 +16,6 @@ public class BestPickRequest {
     public record UpdateLike(
             boolean isLiked
     ) {}
+
+    public record Ids(@NotEmpty(message = "ids는 비어 있을 수 없습니다") List<Long> ids) {}
 }

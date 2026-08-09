@@ -63,4 +63,6 @@ public class BestPickResponse {
             String categoryName,
             boolean isLiked
     ) {}
+
+    public record Delete(List<Long> deleted) {}
 }

@@ -46,4 +46,9 @@ public interface BestPickRepository extends JpaRepository<BestPick, Long> {
 
     // 다중 이동용: 유저 소유의 특정 사진 여러 개 조회 (삭제되지 않은 것만)
     List<BestPick> findByIdInAndUserIdAndDeletedAtIsNull(List<Long> ids, Long userId);
+
+    @Query("select bp from BestPick bp " +
+            "where bp.id in :ids and bp.user.id = :userId and bp.deletedAt is null")
+    List<BestPick> findAliveByIdsAndUserId(@Param("ids") List<Long> ids,
+                                           @Param("userId") Long userId);
 }
