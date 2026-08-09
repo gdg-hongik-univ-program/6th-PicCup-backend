@@ -51,4 +51,10 @@ public interface BestPickRepository extends JpaRepository<BestPick, Long> {
             "where bp.id in :ids and bp.user.id = :userId and bp.deletedAt is null")
     List<BestPick> findAliveByIdsAndUserId(@Param("ids") List<Long> ids,
                                            @Param("userId") Long userId);
+
+    @Query("select bp from BestPick bp " +
+            "where bp.user.id = :userId and bp.deletedAt > :threshold " +
+            "order by bp.deletedAt desc")
+    List<BestPick> findTrash(@Param("userId") Long userId,
+                             @Param("threshold") LocalDateTime threshold);
 }

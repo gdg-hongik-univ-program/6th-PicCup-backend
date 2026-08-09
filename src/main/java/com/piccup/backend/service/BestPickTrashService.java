@@ -4,6 +4,7 @@ import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.entity.BestPick;
 import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,12 +12,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BestPickTrashService {
+
+    private static final int RETENTION_DAYS = 30;
 
     private final BestPickRepository bestPickRepository;
     private final CategoryRepository categoryRepository;
@@ -44,5 +48,25 @@ public class BestPickTrashService {
         originKeys.forEach(s3Uploader::deleteQuietly);
 
         return new BestPickResponse.Delete(ids);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BestPickResponse.Trash> getTrash(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        List<BestPick> picks = bestPickRepository.findTrash(userId, now.minusDays(RETENTION_DAYS));
+
+        return picks.stream()
+                .map(pick -> new BestPickResponse.Trash(
+                        pick.getId(),
+                        pick.getDeletedAt(),
+                        calculateDaysLeft(pick.getDeletedAt(), now),
+                        s3Uploader.generatePresignedUrl(pick.getS3Key())
+                ))
+                .toList();
+    }
+
+    private long calculateDaysLeft(LocalDateTime deletedAt, LocalDateTime now) {
+        long elapsed = ChronoUnit.DAYS.between(deletedAt, now);
+        return Math.max(0, RETENTION_DAYS - elapsed);
     }
 }

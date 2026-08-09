@@ -65,4 +65,6 @@ public class BestPickResponse {
     ) {}
 
     public record Delete(List<Long> deleted) {}
+
+    public record Trash(Long id, LocalDateTime deletedAt, long daysLeft, String imageUrl) {}
 }
