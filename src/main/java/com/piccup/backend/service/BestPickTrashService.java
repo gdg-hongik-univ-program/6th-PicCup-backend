@@ -111,6 +111,21 @@ public class BestPickTrashService {
         return new BestPickResponse.Restore(restored, skipped);
     }
 
+    //영구삭제. DB row를 먼저 지우고 S3 객체를 지운다.
+    public BestPickResponse.Purge purge(Long userId, List<Long> ids) {
+        List<BestPick> targets = bestPickRepository.findTrashedByIdsAndUserId(ids, userId);
+        if (targets.size() != ids.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND");
+        }
+
+        List<String> keys = targets.stream().map(BestPick::getS3Key).toList();
+
+        bestPickRepository.deleteAllInBatch(targets);   // DB 먼저
+        keys.forEach(s3Uploader::deleteQuietly);        // S3 나중, 실패해도 로그만
+
+        return new BestPickResponse.Purge(ids);
+    }
+
     private long calculateDaysLeft(LocalDateTime deletedAt, LocalDateTime now) {
         long elapsed = ChronoUnit.DAYS.between(deletedAt, now);
         return Math.max(0, RETENTION_DAYS - elapsed);

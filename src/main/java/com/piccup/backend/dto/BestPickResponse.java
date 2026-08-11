@@ -71,4 +71,6 @@ public class BestPickResponse {
     public record RestoreItem(Long id, Long categoryId, String categoryName) {}
 
     public record Restore(List<RestoreItem> restored, List<Long> skipped) {}
+
+    public record Purge(List<Long> purged) {}
 }
