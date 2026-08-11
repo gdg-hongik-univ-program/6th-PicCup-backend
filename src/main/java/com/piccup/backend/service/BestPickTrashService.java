@@ -2,6 +2,8 @@ package com.piccup.backend.service;
 
 import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.entity.BestPick;
+import com.piccup.backend.entity.Category;
+import com.piccup.backend.entity.User;
 import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +15,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -21,6 +26,7 @@ import java.util.List;
 public class BestPickTrashService {
 
     private static final int RETENTION_DAYS = 30;
+    private static final String UNCATEGORIZED = "분류 전";
 
     private final BestPickRepository bestPickRepository;
     private final CategoryRepository categoryRepository;
@@ -65,8 +71,94 @@ public class BestPickTrashService {
                 .toList();
     }
 
+    public BestPickResponse.Restore restore(Long userId, List<Long> ids) {
+        List<BestPick> targets = bestPickRepository.findTrashedByIdsAndUserId(ids, userId);
+        if (targets.size() != ids.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND");
+        }
+
+        RestoreContext context = new RestoreContext();
+        List<BestPick> succeeded = new ArrayList<>();
+        List<String> trashKeysToDelete = new ArrayList<>();
+        List<BestPickResponse.RestoreItem> restored = new ArrayList<>();
+        List<Long> skipped = new ArrayList<>();
+
+        for (BestPick pick : targets) {
+            String trashKey = pick.getS3Key();
+
+            // Lifecycle(30일)로 이미 사라진 객체 방어
+            if (!s3Uploader.exists(trashKey)) {
+                log.warn("복구 대상 S3 객체 없음 (만료 추정): pickId={}, key={}", pick.getId(), trashKey);
+                skipped.add(pick.getId());
+                continue;
+            }
+
+            String originalKey = s3Uploader.copyToOriginal(trashKey);   // 복사만
+            Category destination = resolveDestination(pick, context);
+
+            pick.changeCategory(destination);
+            pick.restore(originalKey);
+
+            succeeded.add(pick);
+            trashKeysToDelete.add(trashKey);        // restore() 후엔 역산 불가라 미리 모은다
+            restored.add(new BestPickResponse.RestoreItem(
+                    pick.getId(), destination.getId(), destination.getName()));
+        }
+
+        bestPickRepository.saveAll(succeeded);      // 트랜잭션 없으니 명시 호출 필수
+        trashKeysToDelete.forEach(s3Uploader::deleteQuietly);
+
+        return new BestPickResponse.Restore(restored, skipped);
+    }
+
     private long calculateDaysLeft(LocalDateTime deletedAt, LocalDateTime now) {
         long elapsed = ChronoUnit.DAYS.between(deletedAt, now);
         return Math.max(0, RETENTION_DAYS - elapsed);
+    }
+
+    private Category resolveDestination(BestPick pick, RestoreContext context) {
+        Category origin = pick.getCategory();
+
+        Category cached = context.byOriginId.get(origin.getId());
+        if (cached != null) {
+            return cached;
+        }
+
+        Long userId = pick.getUser().getId();
+        Category destination;
+
+        if (origin.getDeletedAt() == null) {
+            // 케이스 1 — 원 카테고리 살아있음
+            destination = origin;
+
+        } else if (!categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, origin.getName())) {
+            // 케이스 2 — 동명 활성 카테고리 없음 → 원 카테고리 부활
+            origin.restore();
+            destination = categoryRepository.save(origin);
+
+        } else {
+            // 케이스 3 — 이름 충돌 → 분류 전
+            destination = resolveUncategorized(pick.getUser(), context);
+        }
+
+        context.byOriginId.put(origin.getId(), destination);
+        return destination;
+    }
+
+    private Category resolveUncategorized(User user, RestoreContext context) {
+        if (context.uncategorized != null) {
+            return context.uncategorized;                       // 배치 내 중복 생성 방지
+        }
+        Category target = categoryRepository
+                .findByUserIdAndNameAndDeletedAtIsNull(user.getId(), UNCATEGORIZED)
+                .orElseGet(() -> categoryRepository.save(           // 기존 것 있으면 재사용
+                        Category.createCategory(user, UNCATEGORIZED, false)));
+        context.uncategorized = target;
+        return target;
+    }
+    //복구 배치 1회 동안의 카테고리 해석 결과 
+    private static final class RestoreContext {
+        private final Map<Long, Category> byOriginId = new HashMap<>();
+        private Category uncategorized;   // 케이스 3 전용 단일 슬롯
     }
 }

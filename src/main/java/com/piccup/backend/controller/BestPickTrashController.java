@@ -29,4 +29,11 @@ public class BestPickTrashController {
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId) {
         return ResponseEntity.ok(bestPickTrashService.getTrash(userId));
     }
+
+    @PostMapping("/trash/restore")
+    public ResponseEntity<BestPickResponse.Restore> restore(
+            @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
+            @RequestBody @Valid BestPickRequest.Ids request) {
+        return ResponseEntity.ok(bestPickTrashService.restore(userId, request.ids()));
+    }
 }

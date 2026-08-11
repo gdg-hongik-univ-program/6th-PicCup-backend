@@ -67,4 +67,8 @@ public class BestPickResponse {
     public record Delete(List<Long> deleted) {}
 
     public record Trash(Long id, LocalDateTime deletedAt, long daysLeft, String imageUrl) {}
+
+    public record RestoreItem(Long id, Long categoryId, String categoryName) {}
+
+    public record Restore(List<RestoreItem> restored, List<Long> skipped) {}
 }
