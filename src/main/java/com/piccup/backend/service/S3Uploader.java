@@ -1,14 +1,12 @@
 package com.piccup.backend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -16,6 +14,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
 
+
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class S3Uploader {
@@ -97,15 +97,10 @@ public class S3Uploader {
         return originalKey;
     }
 
-    // copy 성공해야 원본 delete (실패 시 원본 보존 → 데이터 안 날아감)
     private void copyAndDeleteOriginal(String sourceKey, String destKey) {
-        s3Client.copyObject(CopyObjectRequest.builder()
-                .sourceBucket(bucket).sourceKey(sourceKey)
-                .destinationBucket(bucket).destinationKey(destKey)
-                .build());
+        copyObject(sourceKey, destKey);
         s3Client.deleteObject(DeleteObjectRequest.builder()
-                .bucket(bucket).key(sourceKey)
-                .build());
+                .bucket(bucket).key(sourceKey).build());
     }
 
     private String toTrashKey(String key) {
@@ -120,5 +115,45 @@ public class S3Uploader {
             throw new IllegalStateException("trash 상태가 아닌 key: " + trashKey);
         }
         return trashKey.replaceFirst("^best-picks/trash/", "best-picks/");
+    }
+
+    // 복사만 한다. 원본 삭제는 DB 갱신 후 호출자가 따로 처리
+    public String copyToTrash(String originalKey) {
+        String trashKey = toTrashKey(originalKey);
+        copyObject(originalKey, trashKey);
+        return trashKey;
+    }
+
+    public String copyToOriginal(String trashKey) {
+        String originalKey = toOriginalKey(trashKey);
+        copyObject(trashKey, originalKey);
+        return originalKey;
+    }
+
+    // Lifecycle로 이미 만료된 객체인지 확인 (복구 전 방어)
+    public boolean exists(String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket).key(key).build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        }
+    }
+
+    // 삭제 실패가 흐름을 끊으면 안 되는 자리용
+    public void deleteQuietly(String key) {
+        try {
+            delete(key);
+        } catch (Exception e) {
+            log.warn("S3 객체 삭제 실패 (미삭제 객체 잔존): {}", key, e);
+        }
+    }
+
+    private void copyObject(String sourceKey, String destKey) {
+        s3Client.copyObject(CopyObjectRequest.builder()
+                .sourceBucket(bucket).sourceKey(sourceKey)
+                .destinationBucket(bucket).destinationKey(destKey)
+                .build());
     }
 }

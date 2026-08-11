@@ -45,4 +45,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     // ID로 찾되, 삭제되지 않은 카테고리 (수정/삭제 전 조회용)
     Optional<Category> findByIdAndDeletedAtIsNull(Long id);
+
+    Optional<Category> findByUserIdAndNameAndDeletedAtIsNull(Long userId, String name);
 }

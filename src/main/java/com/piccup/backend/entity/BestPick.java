@@ -23,9 +23,8 @@ public class BestPick {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    // 유저는 6주차 전까지 임시로 비워둘 수 있도록 nullable = true 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = true)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "s3_key", nullable = false)
@@ -48,7 +47,10 @@ public class BestPick {
         this.createdAt = LocalDateTime.now();
     }
 
-    // 정적 팩토리 메서드 (빌더 패턴)
+    @Column(name = "is_liked", nullable = false)
+    private boolean isLiked = false;
+
+    // 정적 팩토리 메서드
     public static BestPick createBestPick(User user, Category category, String s3Key, LocalDate capturedDate, Integer candidateCount) {
         return BestPick.builder()
                 .user(user)
@@ -56,6 +58,7 @@ public class BestPick {
                 .s3Key(s3Key)
                 .capturedDate(capturedDate)
                 .candidateCount(candidateCount)
+                .isLiked(false)
                 .build();
     }
 
@@ -75,5 +78,10 @@ public class BestPick {
     // 카테고리 재배정 (미분류 폴백 / 카테고리 이동용)
     public void changeCategory(Category category) {
         this.category = category;
+    }
+
+    // 좋아요 상태 변경 메서드
+    public void changeLike(boolean isLiked) {
+        this.isLiked = isLiked;
     }
 }

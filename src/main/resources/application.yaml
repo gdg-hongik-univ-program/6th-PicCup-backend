@@ -4,6 +4,9 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 1
   jpa:
     hibernate:
       ddl-auto: update
@@ -11,6 +14,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    open-in-view: false          # 부팅 로그에 계속 뜨던 경고도 정리
 
   #MySQL 세션 저장소 설정
   session:
@@ -25,6 +29,8 @@ server:
     session:
       cookie:
         max-age: 7d # 프론트엔드 쿠키 7일 유지
+        same-site: lax
+        secure: true      # HTTPS 환경에서만 동작
 
 cloud:
   aws:
@@ -34,3 +40,9 @@ cloud:
     region: ap-northeast-2
     s3:
       bucket: piccup-bestpick-6th
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
