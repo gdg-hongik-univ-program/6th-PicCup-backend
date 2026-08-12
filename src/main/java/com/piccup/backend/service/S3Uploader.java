@@ -156,4 +156,32 @@ public class S3Uploader {
                 .destinationBucket(bucket).destinationKey(destKey)
                 .build());
     }
+
+    // 이하 프로필 사진 업로드
+    // 1. 프로필 전용 사진 업로드
+    public String uploadProfile(MultipartFile file, Long userId) {
+        String key = "profiles/" + userId + "/" + UUID.randomUUID() + ".jpg";
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(file.getContentType())
+                .build();
+        try {
+            s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        } catch (IOException e) {
+            throw new RuntimeException("프로필 사진 업로드 실패", e);
+        }
+        return key;
+    }
+
+    // 2. Best Pic 사진을 프로필용으로 S3 내부에서 복사
+    public String copyToProfile(String sourceKey, Long userId) {
+        String destKey = "profiles/" + userId + "/" + UUID.randomUUID() + ".jpg";
+
+        s3Client.copyObject(CopyObjectRequest.builder()
+                .sourceBucket(bucket).sourceKey(sourceKey)
+                .destinationBucket(bucket).destinationKey(destKey)
+                .build());
+        return destKey;
+    }
 }

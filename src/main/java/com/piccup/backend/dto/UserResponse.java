@@ -24,4 +24,23 @@ public class UserResponse {
     public static class Success {
         private boolean ok;
     }
+
+    // 내 정보 조회 응답
+    public record MyInfo(
+            Long id,
+            String email,
+            String nickname,
+            String profileImageUrl
+    ) {}
+
+    // 닉네임 수정 응답
+    public record UpdateNickname(
+            Long id,
+            String nickname
+    ) {}
+
+    // 프로필 사진 수정 응답
+    public record ProfileImage(
+            String profileImageUrl
+    ) {}
 }

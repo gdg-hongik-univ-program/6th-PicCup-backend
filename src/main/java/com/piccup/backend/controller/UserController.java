@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -56,5 +57,27 @@ public class UserController {
     public ResponseEntity<UserResponse.Success> resetPassword(@RequestBody UserRequest.PasswordReset request) {
         userService.resetPassword(request);
         return ResponseEntity.ok(new UserResponse.Success(true));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse.MyInfo> getMyInfo(
+            @SessionAttribute(name = LOGIN_USER) Long userId) {
+        return ResponseEntity.ok(userService.getMyInfo(userId));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse.UpdateNickname> updateNickname(
+            @SessionAttribute(name = LOGIN_USER) Long userId,
+            @RequestBody UserRequest.UpdateNickname request) {
+        return ResponseEntity.ok(userService.updateNickname(userId, request));
+    }
+
+    @PutMapping("/me/profile-image")
+    public ResponseEntity<UserResponse.ProfileImage> updateProfileImage(
+            @SessionAttribute(name = LOGIN_USER) Long userId,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "bestPickId", required = false) Long bestPickId) {
+
+        return ResponseEntity.ok(userService.updateProfileImage(userId, file, bestPickId));
     }
 }

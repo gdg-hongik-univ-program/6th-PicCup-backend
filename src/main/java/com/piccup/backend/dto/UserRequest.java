@@ -21,4 +21,9 @@ public class UserRequest {
         private String email;
         private String newPassword;
     }
+
+    @Getter
+    public static class UpdateNickname {
+        private String nickname;
+    }
 }

@@ -51,4 +51,14 @@ public class User {
     public void updatePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
     }
+
+    // 닉네임 수정 메서드
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    // 프로필 이미지 키 갱신 메서드
+    public void updateProfileImage(String s3Key) {
+        this.profileImageS3Key = s3Key;
+    }
 }
