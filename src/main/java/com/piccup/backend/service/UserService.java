@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -24,6 +27,7 @@ public class UserService {
     private final CategoryRepository categoryRepository;
     private final BestPickRepository bestPickRepository;
     private final S3Uploader s3Uploader;
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     @Transactional
     public User signup(UserRequest.Signup request) {
@@ -90,7 +94,6 @@ public class UserService {
     }
 
     // 프로필 사진 수정 (직접 업로드 or BestPic 복사)
-    @Transactional
     public UserResponse.ProfileImage updateProfileImage(Long userId, MultipartFile file, Long bestPickId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
@@ -117,8 +120,10 @@ public class UserService {
 
         // 새 이미지 키 저장 및 기존 이미지가 있었다면 삭제
         user.updateProfileImage(newKey);
+        userRepository.save(user); // 트랜잭션 별도 적용 (고아 객체 발생 방지)
+
         if (oldKey != null) {
-            try { s3Uploader.delete(oldKey); } catch (Exception e) {throw new RuntimeException("기존 이미지 삭제 실패    ", e);}
+            try { s3Uploader.delete(oldKey); } catch (Exception e) {log.warn("기존 이미지 삭제 실패",e);}
         }
 
         return new UserResponse.ProfileImage(s3Uploader.generatePresignedUrl(newKey));
