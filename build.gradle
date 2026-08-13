@@ -29,6 +29,7 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
     // AWS S3 SDK v2 — BOM으로 버전 통합 관리
     implementation platform('software.amazon.awssdk:bom:2.47.6')
     implementation 'software.amazon.awssdk:s3'
@@ -37,7 +38,13 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-jdbc'
 	// 비밀번호 암호화(BCrypt)용 시큐리티 모듈
 	implementation 'org.springframework.security:spring-security-crypto'
+
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
+
+	// 서버 메트릭 데이터 수집기
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// 수집한 데이터를 OTLP 포맷으로 클라우드에 쏴주는 라이브러리
+	implementation 'io.micrometer:micrometer-registry-otlp'
 }
 
 tasks.named('test') {
