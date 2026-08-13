@@ -46,3 +46,16 @@ springdoc:
     enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
     enabled: ${SWAGGER_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  otlp:
+    metrics:
+      export:
+        url: ${GRAFANA_OTLP_URL:http://localhost:4318/v1/metrics} # 로컬에서 사용하려면 디폴트 빼고 환경변수 집어넣기
+        headers:
+          Authorization: Basic ${GRAFANA_OTLP_AUTH:}
+        step: 15s
