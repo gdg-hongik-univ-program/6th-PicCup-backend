@@ -146,34 +146,33 @@ public class BestPickTrashService {
             // 케이스 1 — 원 카테고리 살아있음
             destination = origin;
 
-        } else if (!categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, origin.getName())) {
-            // 케이스 2 — 동명 활성 카테고리 없음 → 원 카테고리 부활
-            origin.restore();
-            destination = categoryRepository.save(origin);
-
         } else {
-            // 케이스 3 — 이름 충돌 → 분류 전
-            destination = resolveUncategorized(pick.getUser(), context);
+            // 이번 배치에서 이미 활성화된 동명 카테고리 우선 조회
+            Category sameName = context.activeByName.get(origin.getName());
+            if (sameName == null) {
+                sameName = categoryRepository
+                        .findByUserIdAndNameAndDeletedAtIsNull(userId, origin.getName())
+                        .orElse(null);
+            }
+
+            if (sameName != null) {
+                // 케이스 3 — 이름 같으면 같은 카테고리로 본다
+                destination = sameName;
+            } else {
+                // 케이스 2 — 동명 활성 카테고리 없음 → 원 카테고리 부활
+                origin.restore();
+                destination = categoryRepository.save(origin);
+            }
         }
 
         context.byOriginId.put(origin.getId(), destination);
+        context.activeByName.put(destination.getName(), destination);
         return destination;
     }
 
-    private Category resolveUncategorized(User user, RestoreContext context) {
-        if (context.uncategorized != null) {
-            return context.uncategorized;                       // 배치 내 중복 생성 방지
-        }
-        Category target = categoryRepository
-                .findByUserIdAndNameAndDeletedAtIsNull(user.getId(), UNCATEGORIZED)
-                .orElseGet(() -> categoryRepository.save(           // 기존 것 있으면 재사용
-                        Category.createCategory(user, UNCATEGORIZED, false)));
-        context.uncategorized = target;
-        return target;
-    }
-    //복구 배치 1회 동안의 카테고리 해석 결과 
+    // 복구 배치 1회 동안의 카테고리 해석 결과
     private static final class RestoreContext {
         private final Map<Long, Category> byOriginId = new HashMap<>();
-        private Category uncategorized;   // 케이스 3 전용 단일 슬롯
+        private final Map<String, Category> activeByName = new HashMap<>();
     }
 }
