@@ -57,10 +57,17 @@ management:
     web:
       exposure:
         include: health, info
+
+  metrics:
+    enable:
+      # jvm 메모리나 http 요청 통계는 남기고, 시스템 세부 지표 수집 끄기
+      system: false
+      tomcat: false
+
   otlp:
     metrics:
       export:
         url: ${GRAFANA_OTLP_URL:http://localhost:4318/v1/metrics} # 로컬에서 사용하려면 디폴트 빼고 환경변수 집어넣기
         headers:
           Authorization: Basic ${GRAFANA_OTLP_AUTH:}
-        step: 15s
+        step: 60s
