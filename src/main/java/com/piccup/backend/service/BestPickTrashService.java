@@ -25,6 +25,7 @@ import java.util.Map;
 public class BestPickTrashService {
 
     private static final int RETENTION_DAYS = 30;
+    // 미분류 카테고리 삭제 시 삭제할 것
     private static final String UNCATEGORIZED = "분류 전";
 
     private final BestPickRepository bestPickRepository;

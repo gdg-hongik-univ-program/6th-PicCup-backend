@@ -75,7 +75,7 @@ public class BestPick {
         this.deletedAt = null;
     }
 
-    // 카테고리 재배정 (미분류 폴백 / 카테고리 이동용)
+    // 카테고리 재배정 (카테고리 이동용)
     public void changeCategory(Category category) {
         this.category = category;
     }

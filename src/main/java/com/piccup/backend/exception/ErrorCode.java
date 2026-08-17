@@ -20,6 +20,7 @@ public enum ErrorCode {
 
     // 403 FORBIDDEN: 권한 없음
     FORBIDDEN_RESOURCE(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE", "해당 리소스에 접근할 권한이 없습니다."),
+    // 미분류 카테고리 삭제 시 삭제할 것
     CATEGORY_PROTECTED(HttpStatus.FORBIDDEN, "CATEGORY_PROTECTED", "기본(미분류) 카테고리는 수정하거나 삭제할 수 없습니다."),
 
     // 404 NOT_FOUND: 리소스를 찾을 수 없음

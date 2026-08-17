@@ -46,6 +46,7 @@ public class CategoryService {
                     p.getBestPickCount() != null ? p.getBestPickCount() : 0,
                     p.getLatestCapturedDate(),
                     coverUrl,
+                    // 미분류 카테고리 삭제 시 삭제할 것
                     p.getIsDefault() != null && p.getIsDefault()
             );
         }).collect(Collectors.toList()); // 변환이 끝난 객체들을 다시 하나의 리스트로 포장해 컨트롤러로 넘겨줍
@@ -75,6 +76,7 @@ public class CategoryService {
                 0,
                 null,
                 null,
+                // 미분류 카테고리 삭제 시 삭제할 것
                 saved.isDefault()
         );
     }
@@ -92,6 +94,7 @@ public class CategoryService {
         }
 
         // 이 카테고리가 시스템이 만든 미분류 카테고리라면, 이름 수정을 금지
+        // 미분류 카테고리 삭제 시 삭제할 것
         if (category.isDefault()) {
             throw new BusinessException(ErrorCode.CATEGORY_PROTECTED);
         }
@@ -117,7 +120,10 @@ public class CategoryService {
         if (!category.getUser().getId().equals(userId)) {  // 특정 User가 다른 user의 카테고리 삭제 불가능
             throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
-        if (category.isDefault()) {  // 미분류 카테고리는 삭제 불가능
+
+        // 미분류 카테고리는 삭제 불가능
+        // 미분류 카테고리 삭제 시 삭제할 것
+        if (category.isDefault()) {
             throw new BusinessException(ErrorCode.CATEGORY_PROTECTED);
         }
 

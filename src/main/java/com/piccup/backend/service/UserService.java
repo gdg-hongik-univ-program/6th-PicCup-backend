@@ -42,6 +42,7 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         // 미분류 카테고리 자동 시드 (isDefault=true) — 폴백 안전망
+        // 미분류 카테고리 삭제 시 삭제할 것
         Category uncategorized = Category.createCategory(savedUser, "미분류", true);
         categoryRepository.save(uncategorized);
 

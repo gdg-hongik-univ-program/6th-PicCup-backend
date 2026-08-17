@@ -18,6 +18,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
         Integer getBestPickCount();
         LocalDate getLatestCapturedDate();
         String getCoverImageKey();
+        // 미분류 카테고리 삭제 시 삭제할 것
         Boolean getIsDefault();
     }
 
