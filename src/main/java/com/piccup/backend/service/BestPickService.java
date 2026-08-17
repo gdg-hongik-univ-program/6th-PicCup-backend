@@ -4,23 +4,22 @@ import com.piccup.backend.dto.BestPickRequest;
 import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.entity.BestPick;
 import com.piccup.backend.entity.Category;
+import com.piccup.backend.exception.BusinessException;
+import com.piccup.backend.exception.ErrorCode;
 import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -37,14 +36,14 @@ public class BestPickService {
                                           Long categoryId, LocalDate capturedDate, int candidateCount) {
 
         if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_IMAGE");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE);
         }
 
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         if (!userId.equals(category.getUser().getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         String key = s3Uploader.upload(file, userId);
@@ -73,7 +72,7 @@ public class BestPickService {
             } catch (RuntimeException deleteEx) {
                 log.error("보상 삭제 실패. DB 미등록 S3 객체 남음: key={}", key, deleteEx);
             }
-            throw e;
+            throw e; // S3 오류 등은 500 에러로 처리되도록 그대로 던짐
         }
     }
 
@@ -97,11 +96,11 @@ public class BestPickService {
     // 사진 단건 상세 조회
     public BestPickResponse.Detail getBestPickDetail(Long userId, Long bestPickId) {
         BestPick bp = bestPickRepository.findByIdWithCategory(bestPickId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BEST_PICK_NOT_FOUND));
 
         // 보안
         if (!bp.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         return new BestPickResponse.Detail(
@@ -141,10 +140,10 @@ public class BestPickService {
     @Transactional
     public BestPickResponse.MoveResult moveCategories(Long userId, BestPickRequest.MoveCategory request) {
         Category targetCategory = categoryRepository.findByIdAndDeletedAtIsNull(request.targetCategoryId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         if (!targetCategory.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         List<BestPick> picksToMove = bestPickRepository.findByIdInAndUserIdAndDeletedAtIsNull(request.ids(), userId);
@@ -168,10 +167,10 @@ public class BestPickService {
     @Transactional
     public BestPickResponse.LikeResult updateLike(Long userId, Long pickId, BestPickRequest.UpdateLike request) {
         BestPick pick = bestPickRepository.findByIdWithCategory(pickId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BEST_PICK_NOT_FOUND));
 
         if (!pick.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         pick.changeLike(request.isLiked());

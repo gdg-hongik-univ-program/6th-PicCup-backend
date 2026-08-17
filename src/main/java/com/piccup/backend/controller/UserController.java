@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
@@ -21,14 +22,14 @@ public class UserController {
     private static final String LOGIN_USER = "LOGIN_USER_ID";
 
     @PostMapping("/signup")
-    public ResponseEntity<UserResponse.Signup> signup(@RequestBody UserRequest.Signup request) {
+    public ResponseEntity<UserResponse.Signup> signup(@Valid @RequestBody UserRequest.Signup request) {
         User savedUser = userService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new UserResponse.Signup(savedUser.getId(), savedUser.getEmail(), savedUser.getNickname()));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse.Login> login(@RequestBody UserRequest.Login request, HttpServletRequest httpRequest) {
+    public ResponseEntity<UserResponse.Login> login(@Valid @RequestBody UserRequest.Login request, HttpServletRequest httpRequest) {
         User loginUser = userService.login(request);
 
         // 기존 세션 있으면 무효화
@@ -54,7 +55,7 @@ public class UserController {
     }
 
     @PostMapping("/password/reset")
-    public ResponseEntity<UserResponse.Success> resetPassword(@RequestBody UserRequest.PasswordReset request) {
+    public ResponseEntity<UserResponse.Success> resetPassword(@Valid @RequestBody UserRequest.PasswordReset request) {
         userService.resetPassword(request);
         return ResponseEntity.ok(new UserResponse.Success(true));
     }
@@ -68,7 +69,7 @@ public class UserController {
     @PatchMapping("/me")
     public ResponseEntity<UserResponse.UpdateNickname> updateNickname(
             @SessionAttribute(name = LOGIN_USER) Long userId,
-            @RequestBody UserRequest.UpdateNickname request) {
+            @Valid @RequestBody UserRequest.UpdateNickname request) {
         return ResponseEntity.ok(userService.updateNickname(userId, request));
     }
 

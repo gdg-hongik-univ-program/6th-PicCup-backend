@@ -1,5 +1,7 @@
 package com.piccup.backend.interceptor;
 
+import com.piccup.backend.exception.BusinessException;
+import com.piccup.backend.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -22,13 +24,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
 
         if (session == null || session.getAttribute("LOGIN_USER_ID") == null) {
             log.warn("미인증 사용자의 API 요청 접근 - URI: {}", request.getRequestURI());
-
-            // 401 에러 응답 반환
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\": \"UNAUTHENTICATED\", \"message\": \"세션 없음/만료\"}");
-
-            return false; // 컨트롤러로 요청을 넘기지 않고 여기서 차단
+            throw new BusinessException(ErrorCode.UNAUTHENTICATED);
         }
 
         return true; // 세션이 존재하면 정상적으로 컨트롤러로 요청 전달
