@@ -35,7 +35,7 @@ public class CategoryController {
                 .body(categoryService.createCategory(userId, request));
     }
 
-    @Operation(summary = "카테고리 이름 수정", description = "미분류는 403 CATEGORY_PROTECTED")
+    @Operation(summary = "카테고리 이름 수정", description = "미분류는 403 CATEGORY_PROTECTED")// 미분류 카테고리 삭제 시 삭제할 것
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse.Update> updateCategory(
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
@@ -44,7 +44,7 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.updateCategory(userId, categoryId, request));
     }
 
-    @Operation(summary = "카테고리 삭제", description = "소프트삭제 + 하위 best_pick cascade 트래시 이동. 미분류는 403")
+    @Operation(summary = "카테고리 삭제", description = "소프트삭제 + 하위 best_pick cascade 트래시 이동. 미분류는 403")// 미분류 카테고리 삭제 시 삭제할 것
     @DeleteMapping("/{id}")
     public ResponseEntity<CategoryResponse.Delete> deleteCategory(
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId,

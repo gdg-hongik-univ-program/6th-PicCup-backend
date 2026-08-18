@@ -38,7 +38,7 @@ server:
         same-site: lax
         secure: true      # HTTPS 환경에서만 동작
   error:
-    include-stacktrace: never
+    include-stacktrace: never # trace에 스택트레이스 전문이 실려 나감 방지
 
 cloud:
   aws:
