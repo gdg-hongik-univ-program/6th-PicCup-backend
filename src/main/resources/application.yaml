@@ -1,8 +1,8 @@
 spring:
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 60MB
+      max-file-size: 5MB
+      max-request-size: 15MB
 
   datasource:
     url: ${DB_URL}
@@ -10,15 +10,16 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 3
+      maximum-pool-size: 5
       minimum-idle: 1
+      connection-timeout: 10000
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
     open-in-view: false          # 부팅 로그에 계속 뜨던 경고도 정리
 
   #MySQL 세션 저장소 설정
@@ -36,6 +37,8 @@ server:
         max-age: 7d # 프론트엔드 쿠키 7일 유지
         same-site: lax
         secure: true      # HTTPS 환경에서만 동작
+  error:
+    include-stacktrace: never
 
 cloud:
   aws:
@@ -57,10 +60,17 @@ management:
     web:
       exposure:
         include: health, info
+
+  metrics:
+    enable:
+      # jvm 메모리나 http 요청 통계는 남기고, 시스템 세부 지표 수집 끄기
+      system: false
+      tomcat: false
+
   otlp:
     metrics:
       export:
         url: ${GRAFANA_OTLP_URL:http://localhost:4318/v1/metrics} # 로컬에서 사용하려면 디폴트 빼고 환경변수 집어넣기
         headers:
           Authorization: Basic ${GRAFANA_OTLP_AUTH:}
-        step: 15s
+        step: 60s
