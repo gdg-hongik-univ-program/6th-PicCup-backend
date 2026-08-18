@@ -10,15 +10,16 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 3
+      maximum-pool-size: 5
       minimum-idle: 1
+      connection-timeout: 10000
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
     open-in-view: false          # 부팅 로그에 계속 뜨던 경고도 정리
 
   #MySQL 세션 저장소 설정
@@ -36,6 +37,8 @@ server:
         max-age: 7d # 프론트엔드 쿠키 7일 유지
         same-site: lax
         secure: true      # HTTPS 환경에서만 동작
+  error:
+    include-stacktrace: never
 
 cloud:
   aws:
