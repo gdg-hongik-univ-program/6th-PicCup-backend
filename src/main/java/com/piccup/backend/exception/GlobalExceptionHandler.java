@@ -24,12 +24,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
 
-    // @Valid 유효성 검사 실패 에러 처리
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        log.warn("Validation Error: {}", e.getMessage());
+    // @Valid 유효성 검사 실패 (@RequestBody) 및 BindException (@ModelAttribute) 처리
+    @ExceptionHandler({MethodArgumentNotValidException.class, org.springframework.validation.BindException.class})
+    protected ResponseEntity<ErrorResponse> handleBindAndValidationException(org.springframework.validation.BindException e) {
+        log.warn("Validation/Bind Error: {}", e.getMessage());
         ErrorCode errorCode = ErrorCode.VALIDATION_ERROR;
-        // ErrorResponse 안에 만들어둔 BindingResult 파싱 메서드 호출
         ErrorResponse response = ErrorResponse.of(errorCode, e.getBindingResult());
         return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
