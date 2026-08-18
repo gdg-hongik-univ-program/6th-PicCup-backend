@@ -5,16 +5,13 @@ import com.piccup.backend.dto.CategoryResponse;
 import com.piccup.backend.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Validated
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
@@ -59,7 +56,7 @@ public class CategoryController {
     @PostMapping("/{id}/restore")
     public ResponseEntity<CategoryResponse.Restore> restoreCategory(
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
-            @PathVariable("id") @Positive(message = "ID는 양수여야 합니다.") Long categoryId) {
+            @PathVariable("id") Long categoryId) {
         return ResponseEntity.ok(categoryService.restoreCategory(userId, categoryId));
     }
 }
