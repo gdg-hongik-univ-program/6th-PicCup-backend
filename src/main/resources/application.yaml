@@ -2,7 +2,7 @@ spring:
   servlet:
     multipart:
       max-file-size: 5MB
-      max-request-size: 10MB
+      max-request-size: 15MB
 
   datasource:
     url: ${DB_URL}
@@ -15,7 +15,7 @@ spring:
       connection-timeout: 10000
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
