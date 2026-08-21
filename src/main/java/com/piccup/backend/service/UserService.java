@@ -23,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final CategoryRepository categoryRepository;
     private final BestPickRepository bestPickRepository;
     private final S3Uploader s3Uploader;
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
@@ -40,11 +39,6 @@ public class UserService {
         // 정적 팩토리 메서드 활용
         User user = User.createUser(request.getEmail(), hashedPassword, request.getNickname(), null);
         User savedUser = userRepository.save(user);
-
-        // 미분류 카테고리 자동 시드 (isDefault=true) — 폴백 안전망
-        // 미분류 카테고리 삭제 시 삭제할 것
-        Category uncategorized = Category.createCategory(savedUser, "미분류", true);
-        categoryRepository.save(uncategorized);
 
         return savedUser;
     }

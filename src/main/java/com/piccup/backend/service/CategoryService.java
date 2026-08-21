@@ -45,9 +45,7 @@ public class CategoryService {
                     p.getName(),
                     p.getBestPickCount() != null ? p.getBestPickCount() : 0,
                     p.getLatestCapturedDate(),
-                    coverUrl,
-                    // 미분류 카테고리 삭제 시 삭제할 것
-                    p.getIsDefault() != null && p.getIsDefault()
+                    coverUrl
             );
         }).collect(Collectors.toList()); // 변환이 끝난 객체들을 다시 하나의 리스트로 포장해 컨트롤러로 넘겨줍
     }
@@ -64,8 +62,8 @@ public class CategoryService {
             throw new BusinessException(ErrorCode.CATEGORY_DUPLICATE);
         }
 
-        // 새 카테고리 객체 만듬 (사용자가 만드는 것이니 isDefault는 false)
-        Category category = Category.createCategory(user, request.name(), false);
+        // 새 카테고리 객체 만듬
+        Category category = Category.createCategory(user, request.name());
         // JPA에게 이 객체를 DB에 Insert 하라고 시킴
         Category saved = categoryRepository.save(category);
 
@@ -75,9 +73,7 @@ public class CategoryService {
                 saved.getName(),
                 0,
                 null,
-                null,
-                // 미분류 카테고리 삭제 시 삭제할 것
-                saved.isDefault()
+                null
         );
     }
 
@@ -91,12 +87,6 @@ public class CategoryService {
         // 로그인한 유저와 방금 DB에서 꺼낸 카테고리 주인의 ID가 같은지 비교 (보안)
         if (!category.getUser().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
-        }
-
-        // 이 카테고리가 시스템이 만든 미분류 카테고리라면, 이름 수정을 금지
-        // 미분류 카테고리 삭제 시 삭제할 것
-        if (category.isDefault()) {
-            throw new BusinessException(ErrorCode.CATEGORY_PROTECTED);
         }
 
         // 기존 이름과 새로 바꾸려는 이름이 다를 때만 중복 검사
@@ -119,12 +109,6 @@ public class CategoryService {
 
         if (!category.getUser().getId().equals(userId)) {  // 특정 User가 다른 user의 카테고리 삭제 불가능
             throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
-        }
-
-        // 미분류 카테고리는 삭제 불가능
-        // 미분류 카테고리 삭제 시 삭제할 것
-        if (category.isDefault()) {
-            throw new BusinessException(ErrorCode.CATEGORY_PROTECTED);
         }
 
         // 초 단위로 통일한 배치 시각 (정밀도 불일치 방지)

@@ -23,10 +23,6 @@ public class Category {
     @Column(nullable = false, length = 50)
     private String name;
 
-    // 미분류 카테고리 삭제 시 삭제할 것
-    @Column(name = "is_default", nullable = false)
-    private boolean isDefault; // true면 미분류
-
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt; // 소프트 삭제 여부
 
@@ -40,12 +36,10 @@ public class Category {
     }
 
     // 정적 팩토리 메서드
-    public static Category createCategory(User user, String name, boolean isDefault) {
+    public static Category createCategory(User user, String name) {
         Category category = new Category();
         category.user = user;
         category.name = name;
-        // 미분류 카테고리 삭제 시 삭제할 것
-        category.isDefault = isDefault;
         return category;
     }
 
