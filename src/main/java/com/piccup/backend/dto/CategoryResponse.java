@@ -11,9 +11,7 @@ public class CategoryResponse {
             String name,
             int bestPickCount,
             LocalDate latestCapturedDate,
-            String coverImageUrl,
-            // 미분류 카테고리 삭제 시 삭제할 것
-            @JsonProperty("isDefault") boolean isDefault //이름 강제변환 방지
+            String coverImageUrl
     ) {}
 
     // 카테고리 이름 수정 시 사용
