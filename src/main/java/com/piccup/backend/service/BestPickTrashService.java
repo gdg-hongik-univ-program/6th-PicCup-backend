@@ -3,15 +3,14 @@ package com.piccup.backend.service;
 import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.entity.BestPick;
 import com.piccup.backend.entity.Category;
-import com.piccup.backend.entity.User;
+import com.piccup.backend.exception.BusinessException;
+import com.piccup.backend.exception.ErrorCode;
 import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -26,8 +25,6 @@ import java.util.Map;
 public class BestPickTrashService {
 
     private static final int RETENTION_DAYS = 30;
-    private static final String UNCATEGORIZED = "분류 전";
-
     private final BestPickRepository bestPickRepository;
     private final CategoryRepository categoryRepository;
     private final S3Uploader s3Uploader;
@@ -36,7 +33,7 @@ public class BestPickTrashService {
     public BestPickResponse.Delete softDelete(Long userId, List<Long> ids) {
         List<BestPick> targets = bestPickRepository.findAliveByIdsAndUserId(ids, userId);
         if (targets.size() != ids.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND");
+            throw new BusinessException(ErrorCode.BEST_PICK_NOT_FOUND);
         }
 
         // 1. S3 복사 (원본은 아직 남겨둔다)
@@ -74,7 +71,7 @@ public class BestPickTrashService {
     public BestPickResponse.Restore restore(Long userId, List<Long> ids) {
         List<BestPick> targets = bestPickRepository.findTrashedByIdsAndUserId(ids, userId);
         if (targets.size() != ids.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND");
+            throw new BusinessException(ErrorCode.BEST_PICK_NOT_FOUND);
         }
 
         RestoreContext context = new RestoreContext();
@@ -115,7 +112,7 @@ public class BestPickTrashService {
     public BestPickResponse.Purge purge(Long userId, List<Long> ids) {
         List<BestPick> targets = bestPickRepository.findTrashedByIdsAndUserId(ids, userId);
         if (targets.size() != ids.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BEST_PICK_NOT_FOUND");
+            throw new BusinessException(ErrorCode.BEST_PICK_NOT_FOUND);
         }
 
         List<String> keys = targets.stream().map(BestPick::getS3Key).toList();

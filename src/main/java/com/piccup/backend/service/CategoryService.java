@@ -5,15 +5,15 @@ import com.piccup.backend.dto.CategoryResponse;
 import com.piccup.backend.entity.BestPick;
 import com.piccup.backend.entity.Category;
 import com.piccup.backend.entity.User;
+import com.piccup.backend.exception.BusinessException;
+import com.piccup.backend.exception.ErrorCode;
 import com.piccup.backend.repository.BestPickRepository;
 import com.piccup.backend.repository.CategoryRepository.CategoryListProjection;
 import com.piccup.backend.repository.CategoryRepository;
 import com.piccup.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,8 +45,7 @@ public class CategoryService {
                     p.getName(),
                     p.getBestPickCount() != null ? p.getBestPickCount() : 0,
                     p.getLatestCapturedDate(),
-                    coverUrl,
-                    p.getIsDefault() != null && p.getIsDefault()
+                    coverUrl
             );
         }).collect(Collectors.toList()); // 변환이 끝난 객체들을 다시 하나의 리스트로 포장해 컨트롤러로 넘겨줍
     }
@@ -56,15 +55,15 @@ public class CategoryService {
     public CategoryResponse.Get createCategory(Long userId, CategoryRequest.Create request) {
         // 카테고리 개인화(유저 매핑)
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 해당 유저가 이미 똑같은 이름(으로 만들어둔 카테고리가 있는지 검사(삭제된 것 제외)
         if (categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, request.name())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "CATEGORY_DUPLICATE");
+            throw new BusinessException(ErrorCode.CATEGORY_DUPLICATE);
         }
 
-        // 새 카테고리 객체 만듬 (사용자가 만드는 것이니 isDefault는 false)
-        Category category = Category.createCategory(user, request.name(), false);
+        // 새 카테고리 객체 만듬
+        Category category = Category.createCategory(user, request.name());
         // JPA에게 이 객체를 DB에 Insert 하라고 시킴
         Category saved = categoryRepository.save(category);
 
@@ -74,8 +73,7 @@ public class CategoryService {
                 saved.getName(),
                 0,
                 null,
-                null,
-                saved.isDefault()
+                null
         );
     }
 
@@ -84,22 +82,17 @@ public class CategoryService {
     public CategoryResponse.Update updateCategory(Long userId, Long categoryId, CategoryRequest.Update request) {
         // 바꾸고자 하는 카테고리가 DB에 있는지 그리고 삭제된 건 아닌지 찾음
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 로그인한 유저와 방금 DB에서 꺼낸 카테고리 주인의 ID가 같은지 비교 (보안)
         if (!category.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
-        }
-
-        // 이 카테고리가 시스템이 만든 미분류 카테고리라면, 이름 수정을 금지
-        if (category.isDefault()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CATEGORY_PROTECTED");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         // 기존 이름과 새로 바꾸려는 이름이 다를 때만 중복 검사
         if (!category.getName().equals(request.name()) &&
                 categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, request.name())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "CATEGORY_DUPLICATE");
+            throw new BusinessException(ErrorCode.CATEGORY_DUPLICATE);
         }
 
         // 엔티티의 이름을 새 이름으로 바꿈
@@ -112,13 +105,10 @@ public class CategoryService {
     @Transactional
     public CategoryResponse.Delete deleteCategory(Long userId, Long categoryId) {
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         if (!category.getUser().getId().equals(userId)) {  // 특정 User가 다른 user의 카테고리 삭제 불가능
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
-        }
-        if (category.isDefault()) {  // 미분류 카테고리는 삭제 불가능
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CATEGORY_PROTECTED");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         // 초 단위로 통일한 배치 시각 (정밀도 불일치 방지)
@@ -140,16 +130,16 @@ public class CategoryService {
     public CategoryResponse.Restore restoreCategory(Long userId, Long categoryId) {
         // 삭제된 것도 찾아야 하니 deletedAtIsNull 필터 없는 조회
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         if (!category.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_RESOURCE");
+            throw new BusinessException(ErrorCode.FORBIDDEN_RESOURCE);
         }
 
         // restore() 부르기 전에 batchTime 먼저 확보 (부르고 나면 null 됨)
         LocalDateTime batchTime = category.getDeletedAt();
         if (batchTime == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CATEGORY_NOT_DELETED");
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_DELETED);
         }
 
         category.restore();

@@ -3,17 +3,22 @@ package com.piccup.backend.controller;
 import com.piccup.backend.dto.BestPickRequest;
 import com.piccup.backend.dto.BestPickResponse;
 import com.piccup.backend.service.BestPickService;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import jakarta.validation.Valid;
 
+@Validated
 @RestController
 @RequestMapping("/api/best-picks")
 @RequiredArgsConstructor
@@ -27,8 +32,10 @@ public class BestPickController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam("capturedDate")
+            @PastOrPresent(message = "촬영일은 미래일 수 없습니다.")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate capturedDate,
-            @RequestParam("candidateCount") int candidateCount) {
+            @RequestParam("candidateCount")
+            @Min(value = 1, message = "후보 사진 개수는 1 이상이어야 합니다.") int candidateCount) {
 
         BestPickResponse.Upload res =
                 bestPickService.upload(userId, file, categoryId, capturedDate, candidateCount);
@@ -64,7 +71,7 @@ public class BestPickController {
     @PatchMapping("/move")
     public ResponseEntity<BestPickResponse.MoveResult> moveCategories(
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
-            @RequestBody BestPickRequest.MoveCategory request) {
+            @Valid @RequestBody BestPickRequest.MoveCategory request) {
 
         BestPickResponse.MoveResult res = bestPickService.moveCategories(userId, request);
         return ResponseEntity.ok(res);
@@ -74,7 +81,7 @@ public class BestPickController {
     public ResponseEntity<BestPickResponse.LikeResult> updateLike(
             @SessionAttribute(name = "LOGIN_USER_ID") Long userId,
             @PathVariable("id") Long id,
-            @RequestBody BestPickRequest.UpdateLike request) {
+            @Valid @RequestBody BestPickRequest.UpdateLike request) {
 
         BestPickResponse.LikeResult res = bestPickService.updateLike(userId, id, request);
         return ResponseEntity.ok(res);

@@ -23,9 +23,6 @@ public class Category {
     @Column(nullable = false, length = 50)
     private String name;
 
-    @Column(name = "is_default", nullable = false)
-    private boolean isDefault; // true면 미분류
-
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt; // 소프트 삭제 여부
 
@@ -39,11 +36,10 @@ public class Category {
     }
 
     // 정적 팩토리 메서드
-    public static Category createCategory(User user, String name, boolean isDefault) {
+    public static Category createCategory(User user, String name) {
         Category category = new Category();
         category.user = user;
         category.name = name;
-        category.isDefault = isDefault;
         return category;
     }
 
