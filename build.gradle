@@ -45,6 +45,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	// 수집한 데이터를 OTLP 포맷으로 클라우드에 쏴주는 라이브러리
 	implementation 'io.micrometer:micrometer-registry-otlp'
+
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {
