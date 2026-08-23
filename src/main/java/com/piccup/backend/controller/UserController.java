@@ -1,5 +1,6 @@
 package com.piccup.backend.controller;
 
+import com.piccup.backend.config.ActiveUserTracker;
 import com.piccup.backend.dto.UserRequest;
 import com.piccup.backend.dto.UserResponse;
 import com.piccup.backend.entity.User;
@@ -19,6 +20,7 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService userService;
+    private final ActiveUserTracker activeUserTracker;
     private static final String LOGIN_USER = "LOGIN_USER_ID";
 
     @PostMapping("/signup")
@@ -49,6 +51,10 @@ public class UserController {
     public ResponseEntity<UserResponse.Success> logout(HttpServletRequest httpRequest) {
         HttpSession session = httpRequest.getSession(false);
         if (session != null) {
+            Long userId = (Long) session.getAttribute(LOGIN_USER);
+            if (userId != null) {
+                activeUserTracker.removeUser(userId);
+            }
             session.invalidate(); // 세션 무효화
         }
         return ResponseEntity.ok(new UserResponse.Success(true));

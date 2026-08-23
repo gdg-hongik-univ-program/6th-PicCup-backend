@@ -1,26 +1,29 @@
 package com.piccup.backend.config;
 
 import com.piccup.backend.interceptor.LoginCheckInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@RequiredArgsConstructor // ⬅️ 추가
 public class WebConfig implements WebMvcConfigurer {
+
+    private final LoginCheckInterceptor loginCheckInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new LoginCheckInterceptor())
-                .addPathPatterns("/api/**") // 검사할 기본 경로: /api로 시작하는 모든 요청
-                .excludePathPatterns(       // 인터셉터 검사에서 제외할 예외 경로
+        registry.addInterceptor(loginCheckInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
                         "/api/users/signup",
                         "/api/users/login",
                         "/api/users/password/reset",
-                        "/health",          // 서버 헬스체크용
-                        "/swagger-ui/**",    // API 문서
+                        "/health",
+                        "/swagger-ui/**",
                         "/v3/api-docs/**",
-                        "/ping"             // 자기 핑용
-
+                        "/ping"
                 );
     }
 }
